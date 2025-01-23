@@ -1,0 +1,15 @@
+# Ignoriraj virtualne okoline
+env/
+.venv/
+
+# Python bytecode fajlovi
+__pycache__/
+*.pyc
+*.pyo
+
+# OS specifične datoteke
+.DS_Store
+Thumbs.db
+
+# VS Code specifični folderi
+.vscode/
