@@ -6,10 +6,10 @@ services:
     networks:
       - voyageconnect-network
     environment:
-    - MONGO_URL=mongodb://mongo:27017
-    - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - MONGO_URL=mongodb://mongo:27017
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
     depends_on:
-    - mongo 
+      - mongo
     restart: unless-stopped
 
   destination-service:
@@ -18,8 +18,9 @@ services:
       - "8002:8000"
     networks:
       - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
     restart: unless-stopped
-
 
   post-service:
     build: ./post-service
@@ -27,8 +28,9 @@ services:
       - "8003:8000"
     networks:
       - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
     restart: unless-stopped
-
 
   comment-service:
     build: ./comment-service
@@ -36,8 +38,12 @@ services:
       - "8004:8000"
     networks:
       - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+    depends_on:
+    - mongo
+    - auth-service
     restart: unless-stopped
-
 
   forum-service:
     build: ./forum-service
@@ -45,8 +51,9 @@ services:
       - "8005:8000"
     networks:
       - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
     restart: unless-stopped
-
 
   nginx:
     image: nginx:latest
@@ -60,7 +67,6 @@ services:
       - post-service
       - comment-service
       - forum-service
-
     networks:
       - voyageconnect-network
 
@@ -68,9 +74,14 @@ services:
     image: mongo
     ports:
       - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
     networks:
       - voyageconnect-network
 
 networks:
   voyageconnect-network:
     driver: bridge
+
+volumes:
+  mongo_data:

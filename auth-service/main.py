@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.openapi.utils import get_openapi
 
 import os
 
@@ -59,7 +60,7 @@ async def register(user: UserIn):
         raise HTTPException(status_code=400, detail="Email već registriran")
 
     hashed_pwd = hash_password(user.password)
-    user_doc = {**user.dict(), "lozinka": hashed_pwd}
+    user_doc = {**user.dict(), "password": hashed_pwd}
     await user_collection.insert_one(user_doc)
 
     return UserOut(username=user.username, email=user.email)
@@ -67,7 +68,7 @@ async def register(user: UserIn):
 @app.post("/login", response_model=Token)
 async def login(user: UserIn):
     user_doc = await user_collection.find_one({"email": user.email})
-    if not user_doc or not verify_password(user.password, user_doc["lozinka"]):
+    if not user_doc or not verify_password(user.password, user_doc["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token_data = {"sub": user_doc["email"]}
@@ -75,6 +76,7 @@ async def login(user: UserIn):
     return {"access_token": token, "token_type": "bearer"}
 
 security = HTTPBearer()
+
 @app.get("/verify-token")
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -90,3 +92,31 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 def read_root():
     instance = os.getenv("INSTANCE", "unknown")
     return { "message": f"Hello from auth-service instance " + instance }
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="VoyageConnect API",
+        version="1.0.0",
+        description="API sa JWT autentifikacijom",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            if "security" not in openapi_schema["paths"][path][method]:
+                openapi_schema["paths"][path][method]["security"] = []
+            # check ima li endpoint ima Depends(security)
+            if "verify-token" in path or "some-secured-endpoint" in path:
+                openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
