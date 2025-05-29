@@ -100,3 +100,7 @@ async def get_messages(topic_id: str = Query(...)):
         doc["id"] = str(doc["_id"])
         results.append(MessageOut(**doc))
     return results
+
+@app.get("/", tags=["Health"])
+def root():
+    return {"message": "forum service je live"}

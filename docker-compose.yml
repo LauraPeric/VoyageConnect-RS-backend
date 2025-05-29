@@ -10,8 +10,34 @@ services:
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
     depends_on:
       - mongo
-    restart: unless-stopped
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
+
+  auth-service-2:
+    build: ./auth-service
+    container_name: auth-service-2
+    ports:
+      - "8006:8000"
+    networks:
+      - voyageconnect-network
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+    depends_on:
+      - mongo
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+    
   destination-service:
     build: ./destination-service
     ports:
@@ -63,6 +89,7 @@ services:
       - "8080:80"
     depends_on:
       - auth-service
+      - auth-service-2
       - destination-service
       - post-service
       - comment-service

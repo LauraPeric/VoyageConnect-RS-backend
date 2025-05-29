@@ -53,6 +53,10 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 # API
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 @app.post("/register", response_model=UserOut)
 async def register(user: UserIn):
     existing_user = await user_collection.find_one({"email": user.email})

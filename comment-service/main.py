@@ -30,7 +30,7 @@ class CommentOut(CommentIn):
     created_by: str
     created_at: datetime
 
-# Dekodiranje JWT tokena
+# JWT tokn
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     try:
@@ -42,7 +42,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
 
-# Dodavanje komentara ili odgovora
 @app.post("/comments", response_model=CommentOut)
 async def create_comment(comment: CommentIn, user_email: str = Depends(get_current_user)):
     new_comment = comment.dict()
@@ -54,7 +53,6 @@ async def create_comment(comment: CommentIn, user_email: str = Depends(get_curre
     new_comment["id"] = str(result.inserted_id)
     return new_comment
 
-# Dohvaćanje svih komentara za post (i odgovora)
 @app.get("/comments", response_model=List[CommentOut])
 async def get_comments(post_id: str = Query(...)):
     cursor = db.comments.find({"post_id": post_id})
@@ -63,3 +61,7 @@ async def get_comments(post_id: str = Query(...)):
         doc["id"] = str(doc["_id"])
         comments.append(CommentOut(**doc))
     return comments
+
+@app.get("/", tags=["Health"])
+def root():
+    return {"message": "comment service je live"}
