@@ -53,6 +53,12 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 # API
 
+@app.get("/")
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from auth-service instance " + instance}
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -92,10 +98,6 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-@app.get("/")
-def read_root():
-    instance = os.getenv("INSTANCE", "unknown")
-    return { "message": f"Hello from auth-service instance " + instance }
 
 def custom_openapi():
     if app.openapi_schema:

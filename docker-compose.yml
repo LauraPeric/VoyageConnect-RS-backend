@@ -8,6 +8,7 @@ services:
     environment:
       - MONGO_URL=mongodb://mongo:27017
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=auth-1
     depends_on:
       - mongo
     restart: always
@@ -28,6 +29,8 @@ services:
     environment:
       - MONGO_URL=mongodb://mongo:27017
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=auth-2
+
     depends_on:
       - mongo
     restart: always
