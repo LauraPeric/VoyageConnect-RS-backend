@@ -58,7 +58,7 @@ def read_root():
     instance = os.getenv("INSTANCE", "unknown")
     return {"message": f"Hello from auth-service instance " + instance}
 
-@app.post("/register", response_model=UserOut)
+@app.post("/register", response_model=UserOut, tags=["Auth"])
 async def register(user: UserIn):
     existing_user = await user_collection.find_one({"email": user.email})
     if existing_user:
@@ -70,7 +70,7 @@ async def register(user: UserIn):
 
     return UserOut(username=user.username, email=user.email)
 
-@app.post("/login", response_model=Token)
+@app.post("/login", response_model=Token, tags=["Auth"])
 async def login(user: UserIn):
     user_doc = await user_collection.find_one({"email": user.email})
     if not user_doc or not verify_password(user.password, user_doc["password"]):

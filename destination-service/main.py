@@ -42,7 +42,7 @@ def read_root():
     instance = os.getenv("INSTANCE", "unknown")
     return {"message": f"Hello from destination-service instance {instance}"}
 
-@app.get("/destinations", response_model=List[DestinationOut])
+@app.get("/destinations", response_model=List[DestinationOut], tags=["Destinations"])
 async def get_destinations():
     destinations = await destination_collection.find().to_list(100)
     return [
@@ -57,7 +57,7 @@ async def get_destinations():
         for d in destinations
     ]
 
-@app.post("/destinations", response_model=DestinationOut)
+@app.post("/destinations", response_model=DestinationOut, tags=["Destinations"])
 async def create_destination(data: DestinationIn, user: str = Depends(get_current_user)):
     new_dest = {
         "name": data.name,
@@ -70,7 +70,7 @@ async def create_destination(data: DestinationIn, user: str = Depends(get_curren
     new_dest["id"] = str(result.inserted_id)
     return new_dest
 
-@app.get("/destinations/{id}", response_model=DestinationOut)
+@app.get("/destinations/{id}", response_model=DestinationOut, tags=["Destinations"])
 async def get_destination(id: str):
     try:
         dest = await destination_collection.find_one({"_id": ObjectId(id)})
@@ -87,7 +87,7 @@ async def get_destination(id: str):
         "created_at": dest["created_at"],
     }
 
-@app.get("/health", tags=["Health"])
+@app.get("/health")
 def health():
     return {"status": "ok"}
 

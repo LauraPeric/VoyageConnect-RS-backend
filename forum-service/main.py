@@ -59,7 +59,7 @@ def read_root():
 def crash():
     sys.exit(1)  # simulacija pada apl
 
-@app.post("/topics", response_model=TopicOut)
+@app.post("/topics", response_model=TopicOut, tags=["Topics"])
 async def create_topic(topic: TopicIn, user: str = Depends(get_current_user)):
     data = topic.dict()
     data["created_by"] = user
@@ -68,7 +68,7 @@ async def create_topic(topic: TopicIn, user: str = Depends(get_current_user)):
     data["id"] = str(result.inserted_id)
     return data
 
-@app.get("/topics", response_model=List[TopicOut])
+@app.get("/topics", response_model=List[TopicOut], tags=["Topics"])
 async def get_topics():
     cursor = db.forum_topics.find()
     topics = []
@@ -77,7 +77,7 @@ async def get_topics():
         topics.append(TopicOut(**doc))
     return topics
 
-@app.get("/topics/{id}", response_model=TopicOut)
+@app.get("/topics/{id}", response_model=TopicOut, tags=["Topics"])
 async def get_topic(id: str):
     try:
         topic = await db.forum_topics.find_one({"_id": ObjectId(id)})
@@ -88,7 +88,7 @@ async def get_topic(id: str):
     topic["id"] = str(topic["_id"])
     return TopicOut(**topic)
 
-@app.patch("/topics/{id}", response_model=TopicOut)
+@app.patch("/topics/{id}", response_model=TopicOut, tags=["Topics"])
 async def update_topic(
     id: str = Path(...),
     topic_update: TopicIn = None,
@@ -109,7 +109,7 @@ async def update_topic(
     updated_topic["id"] = str(updated_topic["_id"])
     return updated_topic
 
-@app.delete("/topics/{id}", status_code=204)
+@app.delete("/topics/{id}", status_code=204, tags=["Topics"])
 async def delete_topic(
     id: str = Path(...),
     user_email: str = Depends(get_current_user)
@@ -123,7 +123,7 @@ async def delete_topic(
     await db.topics.delete_one({"_id": ObjectId(id)})
     return
 
-@app.post("/messages", response_model=MessageOut)
+@app.post("/messages", response_model=MessageOut, tags=["Messages"])
 async def post_message(message: MessageIn, user: str = Depends(get_current_user)):
     doc = message.dict()
     doc["created_by"] = user
@@ -132,7 +132,7 @@ async def post_message(message: MessageIn, user: str = Depends(get_current_user)
     doc["id"] = str(result.inserted_id)
     return doc
 
-@app.get("/messages", response_model=List[MessageOut])
+@app.get("/messages", response_model=List[MessageOut], tags=["Messages"])
 async def get_messages(topic_id: str = Query(...)):
     cursor = db.forum_messages.find({"topic_id": topic_id})
     results = []
@@ -141,7 +141,8 @@ async def get_messages(topic_id: str = Query(...)):
         results.append(MessageOut(**doc))
     return results
 
-@app.patch("/messages/{id}", response_model=MessageOut)
+
+@app.patch("/messages/{id}", response_model=MessageOut, tags=["Messages"])
 async def update_message(
     id: str = Path(...),
     message_update: MessageIn = None,
@@ -162,7 +163,7 @@ async def update_message(
     updated_message["id"] = str(updated_message["_id"])
     return updated_message
 
-@app.delete("/messages/{id}", status_code=204)
+@app.delete("/messages/{id}", status_code=204, tags=["Messages"])
 async def delete_message(
     id: str = Path(...),
     user_email: str = Depends(get_current_user)
@@ -176,6 +177,6 @@ async def delete_message(
     await db.messages.delete_one({"_id": ObjectId(id)})
     return
 
-@app.get("/health", tags=["Health"])
+@app.get("/health")
 def health():
     return {"status": "ok"} 

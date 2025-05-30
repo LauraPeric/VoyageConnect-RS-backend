@@ -5,6 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from datetime import datetime
+from bson import ObjectId
 import os
 
 app = FastAPI()
@@ -47,7 +48,7 @@ def read_root():
     instance = os.getenv("INSTANCE", "unknown")
     return {"message": f"Hello from comment-service instance " + instance}
 
-@app.post("/comments", response_model=CommentOut)
+@app.post("/comments", response_model=CommentOut, tags=["Comments"])
 async def create_comment(comment: CommentIn, user_email: str = Depends(get_current_user)):
     new_comment = comment.dict()
     new_comment.update({
@@ -58,7 +59,7 @@ async def create_comment(comment: CommentIn, user_email: str = Depends(get_curre
     new_comment["id"] = str(result.inserted_id)
     return new_comment
 
-@app.get("/comments", response_model=List[CommentOut])
+@app.get("/comments", response_model=List[CommentOut], tags=["Comments"])
 async def get_comments(post_id: str = Query(...)):
     cursor = db.comments.find({"post_id": post_id})
     comments = []
@@ -67,10 +68,7 @@ async def get_comments(post_id: str = Query(...)):
         comments.append(CommentOut(**doc))
     return comments
 
-from fastapi import Path, Depends, HTTPException
-from bson import ObjectId
-
-@app.patch("/comments/{id}", response_model=CommentOut)
+@app.patch("/comments/{id}", response_model=CommentOut, tags=["Comments"])
 async def update_comment(
     id: str = Path(...),
     comment_update: CommentIn = None,
@@ -91,7 +89,7 @@ async def update_comment(
     updated_comment["id"] = str(updated_comment["_id"])
     return updated_comment
 
-@app.delete("/comments/{id}", status_code=204)
+@app.delete("/comments/{id}", status_code=204, tags=["Comments"])
 async def delete_comment(
     id: str = Path(...),
     user_email: str = Depends(get_current_user)
@@ -105,6 +103,6 @@ async def delete_comment(
     await db.comments.delete_one({"_id": ObjectId(id)})
     return
 
-@app.get("/health", tags=["Health"])
+@app.get("/health")
 def health():
     return {"status": "ok"} 

@@ -79,23 +79,6 @@ async def create_post(post: PostIn, user: str = Depends(get_current_user)):
     doc["id"] = str(result.inserted_id)
     return doc
 
-@app.get("/posts/{id}", response_model=PostOut, tags=["Posts"])
-async def get_post(id: str):
-    try:
-        post = await posts.find_one({"_id": ObjectId(id)})
-    except Exception:
-        raise HTTPException(status_code=400, detail="Nevažeći ID format")
-    if not post:
-        raise HTTPException(status_code=404, detail="Post nije pronađen")
-    return {
-        "id": str(post["_id"]),
-        "title": post["title"],
-        "content": post["content"],
-        "image_url": post.get("image_url"),
-        "destination_id": post["destination_id"],
-        "created_by": post["created_by"],
-        "created_at": post["created_at"]
-    }
 
 @app.patch("/posts/{id}", response_model=PostOut, tags=["Posts"])
 async def update_post(
