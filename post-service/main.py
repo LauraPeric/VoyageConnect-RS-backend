@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Path
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing import List, Optional
@@ -42,18 +42,14 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     except (JWTError, ValueError, KeyError):
         raise HTTPException(status_code=401, detail="Invalid token")
 
-@app.get("/crash")
-def crash():
-    sys.exit(1)  # Izlaz sa kodom 1 da se simulira pad aplikacije
-
-@app.get("/health", tags=["Health"])
-def health():
-    return {"status": "ok"}
-
 @app.get("/")
 def read_root():
     instance = os.getenv("INSTANCE", "unknown")
     return {"message": f"Hello from post-service instance " + instance}
+
+@app.get("/crash")
+def crash():
+    sys.exit(1)  # simulacija pada apl
 
 @app.get("/posts", response_model=List[PostOut], tags=["Posts"])
 async def get_posts(destination_id: Optional[str] = None):
@@ -100,3 +96,42 @@ async def get_post(id: str):
         "created_by": post["created_by"],
         "created_at": post["created_at"]
     }
+
+@app.patch("/posts/{id}", response_model=PostOut, tags=["Posts"])
+async def update_post(
+    id: str = Path(...),
+    post_update: PostIn = None,
+    user_email: str = Depends(get_current_user)
+):
+    update_data = post_update.dict(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    post = await db.posts.find_one({"_id": ObjectId(id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this post")
+
+    await db.posts.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    updated_post = await db.posts.find_one({"_id": ObjectId(id)})
+    updated_post["id"] = str(updated_post["_id"])
+    return updated_post
+
+@app.delete("/posts/{id}", status_code=204,  tags=["Posts"])
+async def delete_post(
+    id: str = Path(...),
+    user_email: str = Depends(get_current_user)
+):
+    post = await db.posts.find_one({"_id": ObjectId(id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+
+    await db.posts.delete_one({"_id": ObjectId(id)})
+    return
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

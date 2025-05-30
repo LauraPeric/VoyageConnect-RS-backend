@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Path 
 from pydantic import BaseModel, Field
 from typing import List
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -20,8 +20,6 @@ db = client.voyageconnect
 
 security = HTTPBearer()
 
-### MODELI
-
 class TopicIn(BaseModel):
     title: str
     description: str
@@ -40,8 +38,6 @@ class MessageOut(MessageIn):
     created_by: str
     created_at: datetime
 
-### AUTH
-
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     try:
@@ -53,7 +49,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
 
-### ENDPOINTI
+
+@app.get("/")
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from forum-service instance " + instance}
+
+@app.get("/crash")
+def crash():
+    sys.exit(1)  # simulacija pada apl
 
 @app.post("/topics", response_model=TopicOut)
 async def create_topic(topic: TopicIn, user: str = Depends(get_current_user)):
@@ -84,6 +88,41 @@ async def get_topic(id: str):
     topic["id"] = str(topic["_id"])
     return TopicOut(**topic)
 
+@app.patch("/topics/{id}", response_model=TopicOut)
+async def update_topic(
+    id: str = Path(...),
+    topic_update: TopicIn = None,
+    user_email: str = Depends(get_current_user)
+):
+    update_data = topic_update.dict(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    topic = await db.topics.find_one({"_id": ObjectId(id)})
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    if topic["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this topic")
+
+    await db.topics.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    updated_topic = await db.topics.find_one({"_id": ObjectId(id)})
+    updated_topic["id"] = str(updated_topic["_id"])
+    return updated_topic
+
+@app.delete("/topics/{id}", status_code=204)
+async def delete_topic(
+    id: str = Path(...),
+    user_email: str = Depends(get_current_user)
+):
+    topic = await db.topics.find_one({"_id": ObjectId(id)})
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    if topic["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this topic")
+
+    await db.topics.delete_one({"_id": ObjectId(id)})
+    return
+
 @app.post("/messages", response_model=MessageOut)
 async def post_message(message: MessageIn, user: str = Depends(get_current_user)):
     doc = message.dict()
@@ -102,16 +141,41 @@ async def get_messages(topic_id: str = Query(...)):
         results.append(MessageOut(**doc))
     return results
 
+@app.patch("/messages/{id}", response_model=MessageOut)
+async def update_message(
+    id: str = Path(...),
+    message_update: MessageIn = None,
+    user_email: str = Depends(get_current_user)
+):
+    update_data = message_update.dict(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
 
-@app.get("/crash")
-def crash():
-    sys.exit(1)  # simulacija pada apl
+    message = await db.messages.find_one({"_id": ObjectId(id)})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    if message["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this message")
+
+    await db.messages.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    updated_message = await db.messages.find_one({"_id": ObjectId(id)})
+    updated_message["id"] = str(updated_message["_id"])
+    return updated_message
+
+@app.delete("/messages/{id}", status_code=204)
+async def delete_message(
+    id: str = Path(...),
+    user_email: str = Depends(get_current_user)
+):
+    message = await db.messages.find_one({"_id": ObjectId(id)})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    if message["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this message")
+
+    await db.messages.delete_one({"_id": ObjectId(id)})
+    return
 
 @app.get("/health", tags=["Health"])
 def health():
-    return {"status": "ok"}
-
-@app.get("/")
-def read_root():
-    instance = os.getenv("INSTANCE", "unknown")
-    return {"message": f"Hello from forum-service instance " + instance}
+    return {"status": "ok"} 

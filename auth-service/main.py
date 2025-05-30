@@ -58,11 +58,6 @@ def read_root():
     instance = os.getenv("INSTANCE", "unknown")
     return {"message": f"Hello from auth-service instance " + instance}
 
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
 @app.post("/register", response_model=UserOut)
 async def register(user: UserIn):
     existing_user = await user_collection.find_one({"email": user.email})
@@ -98,6 +93,9 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 def custom_openapi():
     if app.openapi_schema:

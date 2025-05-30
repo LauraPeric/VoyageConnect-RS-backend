@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -42,6 +42,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
 
+@app.get("/")
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from comment-service instance " + instance}
+
 @app.post("/comments", response_model=CommentOut)
 async def create_comment(comment: CommentIn, user_email: str = Depends(get_current_user)):
     new_comment = comment.dict()
@@ -62,11 +67,44 @@ async def get_comments(post_id: str = Query(...)):
         comments.append(CommentOut(**doc))
     return comments
 
+from fastapi import Path, Depends, HTTPException
+from bson import ObjectId
+
+@app.patch("/comments/{id}", response_model=CommentOut)
+async def update_comment(
+    id: str = Path(...),
+    comment_update: CommentIn = None,
+    user_email: str = Depends(get_current_user)
+):
+    update_data = comment_update.dict(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    comment = await db.comments.find_one({"_id": ObjectId(id)})
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this comment")
+
+    await db.comments.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    updated_comment = await db.comments.find_one({"_id": ObjectId(id)})
+    updated_comment["id"] = str(updated_comment["_id"])
+    return updated_comment
+
+@app.delete("/comments/{id}", status_code=204)
+async def delete_comment(
+    id: str = Path(...),
+    user_email: str = Depends(get_current_user)
+):
+    comment = await db.comments.find_one({"_id": ObjectId(id)})
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment["created_by"] != user_email:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+
+    await db.comments.delete_one({"_id": ObjectId(id)})
+    return
+
 @app.get("/health", tags=["Health"])
 def health():
-    return {"status": "ok"}
-
-@app.get("/")
-def read_root():
-    instance = os.getenv("INSTANCE", "unknown")
-    return {"message": f"Hello from comment-service instance " + instance}
+    return {"status": "ok"} 
