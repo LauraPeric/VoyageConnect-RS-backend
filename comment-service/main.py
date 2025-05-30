@@ -62,6 +62,11 @@ async def get_comments(post_id: str = Query(...)):
         comments.append(CommentOut(**doc))
     return comments
 
-@app.get("/", tags=["Health"])
-def root():
-    return {"message": "comment service je live"}
+@app.get("/health", tags=["Health"])
+def health():
+    return {"status": "ok"}
+
+@app.get("/")
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from comment-service instance " + instance}

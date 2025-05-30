@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   auth-service:
     build: ./auth-service
@@ -18,7 +20,6 @@ services:
       timeout: 2s
       retries: 5
 
-
   auth-service-2:
     build: ./auth-service
     container_name: auth-service-2
@@ -30,7 +31,6 @@ services:
       - MONGO_URL=mongodb://mongo:27017
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
       - INSTANCE=auth-2
-
     depends_on:
       - mongo
     restart: always
@@ -40,7 +40,6 @@ services:
       timeout: 2s
       retries: 5
 
-    
   destination-service:
     build: ./destination-service
     ports:
@@ -49,7 +48,34 @@ services:
       - voyageconnect-network
     environment:
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
-    restart: unless-stopped
+      - INSTANCE=destination-1
+    depends_on:
+      - mongo
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  destination-service-2:
+    build: ./destination-service
+    container_name: destination-service-2
+    ports:
+      - "8012:8000"
+    networks:
+      - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=destination-2
+    depends_on:
+      - mongo
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   post-service:
     build: ./post-service
@@ -59,7 +85,34 @@ services:
       - voyageconnect-network
     environment:
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
-    restart: unless-stopped
+      - INSTANCE=post-1
+    depends_on:
+      - mongo
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  post-service-2:
+    build: ./post-service
+    container_name: post-service-2
+    ports:
+      - "8013:8000"
+    networks:
+      - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=post-2
+    depends_on:
+      - mongo
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   comment-service:
     build: ./comment-service
@@ -69,10 +122,36 @@ services:
       - voyageconnect-network
     environment:
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=comment-1
     depends_on:
-    - mongo
-    - auth-service
-    restart: unless-stopped
+      - mongo
+      - auth-service
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  comment-service-2:
+    build: ./comment-service
+    container_name: comment-service-2
+    ports:
+      - "8014:8000"
+    networks:
+      - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=comment-2
+    depends_on:
+      - mongo
+      - auth-service-2
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   forum-service:
     build: ./forum-service
@@ -82,7 +161,34 @@ services:
       - voyageconnect-network
     environment:
       - SECRET_KEY=velikitajnikljuckojitrebapromjenit
-    restart: unless-stopped
+      - INSTANCE=forum-1
+    depends_on:
+      - mongo
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  forum-service-2:
+    build: ./forum-service
+    container_name: forum-service-2
+    ports:
+      - "8015:8000"
+    networks:
+      - voyageconnect-network
+    environment:
+      - SECRET_KEY=velikitajnikljuckojitrebapromjenit
+      - INSTANCE=forum-2
+    depends_on:
+      - mongo
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   nginx:
     image: nginx:latest
@@ -94,9 +200,13 @@ services:
       - auth-service
       - auth-service-2
       - destination-service
+      - destination-service-2
       - post-service
+      - post-service-2
       - comment-service
+      - comment-service-2
       - forum-service
+      - forum-service-2
     networks:
       - voyageconnect-network
 

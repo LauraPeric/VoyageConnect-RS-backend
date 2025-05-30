@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from datetime import datetime
 from bson import ObjectId
 import os
+import sys
 
 app = FastAPI()
 
@@ -101,6 +102,16 @@ async def get_messages(topic_id: str = Query(...)):
         results.append(MessageOut(**doc))
     return results
 
-@app.get("/", tags=["Health"])
-def root():
-    return {"message": "forum service je live"}
+
+@app.get("/crash")
+def crash():
+    sys.exit(1)  # simulacija pada apl
+
+@app.get("/health", tags=["Health"])
+def health():
+    return {"status": "ok"}
+
+@app.get("/")
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from forum-service instance " + instance}

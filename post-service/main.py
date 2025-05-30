@@ -8,6 +8,7 @@ from datetime import datetime
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 from typing import Optional
+import sys
 
 app = FastAPI()
 
@@ -41,10 +42,18 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     except (JWTError, ValueError, KeyError):
         raise HTTPException(status_code=401, detail="Invalid token")
 
-@app.get("/", tags=["Health"])
-def root():
-    return {"message": "Post service je live"}
+@app.get("/crash")
+def crash():
+    sys.exit(1)  # Izlaz sa kodom 1 da se simulira pad aplikacije
 
+@app.get("/health", tags=["Health"])
+def health():
+    return {"status": "ok"}
+
+@app.get("/")
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from post-service instance " + instance}
 
 @app.get("/posts", response_model=List[PostOut], tags=["Posts"])
 async def get_posts(destination_id: Optional[str] = None):

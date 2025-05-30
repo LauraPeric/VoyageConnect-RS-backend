@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# instalacija curla i ostalog
+# instalacija curla i procps (za top)
 RUN apt-get update && \
-    apt-get install -y curl && \
+    apt-get install -y curl procps && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

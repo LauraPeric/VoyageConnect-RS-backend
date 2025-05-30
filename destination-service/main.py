@@ -115,11 +115,6 @@ async def get_destination(id: str):
         "created_at": dest["created_at"],
     }
 
-@app.get("/")
-def root():
-    return {"message": "Destination service je live"}
-ALGORITHM = "HS256"
-
 # Pydantic modeli
 class DestinationIn(BaseModel):
     name: str
@@ -192,6 +187,12 @@ async def get_destination(id: str):
         "created_at": dest["created_at"],
     }
 
+
+@app.get("/health", tags=["Health"])
+def health():
+    return {"status": "ok"}
+
 @app.get("/")
-def root():
-    return {"message": "Destination service je live"}
+def read_root():
+    instance = os.getenv("INSTANCE", "unknown")
+    return {"message": f"Hello from destination-service instance " + instance}
