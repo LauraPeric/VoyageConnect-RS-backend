@@ -98,14 +98,14 @@ async def update_topic(
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields provided for update")
 
-    topic = await db.topics.find_one({"_id": ObjectId(id)})
+    topic = await db.forum_topics.find_one({"_id": ObjectId(id)})
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
     if topic["created_by"] != user_email:
         raise HTTPException(status_code=403, detail="Not authorized to edit this topic")
 
-    await db.topics.update_one({"_id": ObjectId(id)}, {"$set": update_data})
-    updated_topic = await db.topics.find_one({"_id": ObjectId(id)})
+    await db.forum_topics.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    updated_topic = await db.forum_topics.find_one({"_id": ObjectId(id)})
     updated_topic["id"] = str(updated_topic["_id"])
     return updated_topic
 
@@ -114,13 +114,13 @@ async def delete_topic(
     id: str = Path(...),
     user_email: str = Depends(get_current_user)
 ):
-    topic = await db.topics.find_one({"_id": ObjectId(id)})
+    topic = await db.forum_topics.find_one({"_id": ObjectId(id)})
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
     if topic["created_by"] != user_email:
         raise HTTPException(status_code=403, detail="Not authorized to delete this topic")
 
-    await db.topics.delete_one({"_id": ObjectId(id)})
+    await db.forum_topics.delete_one({"_id": ObjectId(id)})
     return
 
 @app.post("/messages", response_model=MessageOut, tags=["Messages"])
@@ -141,7 +141,6 @@ async def get_messages(topic_id: str = Query(...)):
         results.append(MessageOut(**doc))
     return results
 
-
 @app.patch("/messages/{id}", response_model=MessageOut, tags=["Messages"])
 async def update_message(
     id: str = Path(...),
@@ -152,14 +151,14 @@ async def update_message(
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields provided for update")
 
-    message = await db.messages.find_one({"_id": ObjectId(id)})
+    message = await db.forum_messages.find_one({"_id": ObjectId(id)})
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
     if message["created_by"] != user_email:
         raise HTTPException(status_code=403, detail="Not authorized to edit this message")
 
-    await db.messages.update_one({"_id": ObjectId(id)}, {"$set": update_data})
-    updated_message = await db.messages.find_one({"_id": ObjectId(id)})
+    await db.forum_messages.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    updated_message = await db.forum_messages.find_one({"_id": ObjectId(id)})
     updated_message["id"] = str(updated_message["_id"])
     return updated_message
 
@@ -168,15 +167,15 @@ async def delete_message(
     id: str = Path(...),
     user_email: str = Depends(get_current_user)
 ):
-    message = await db.messages.find_one({"_id": ObjectId(id)})
+    message = await db.forum_messages.find_one({"_id": ObjectId(id)})
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
     if message["created_by"] != user_email:
         raise HTTPException(status_code=403, detail="Not authorized to delete this message")
 
-    await db.messages.delete_one({"_id": ObjectId(id)})
+    await db.forum_messages.delete_one({"_id": ObjectId(id)})
     return
 
 @app.get("/health")
 def health():
-    return {"status": "ok"} 
+    return {"status": "ok"}
