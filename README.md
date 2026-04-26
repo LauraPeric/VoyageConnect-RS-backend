@@ -13,6 +13,9 @@
 
 Projekt koristi autentifikaciju putem JSON Web Tokena (JWT), a svaki mikroservis zadužen je za svoju zasebnu domenu unutar sustava.
 
+## 🚀 Pregled projekta
+Distribuirani pozadinski sustav (backend) temeljen na mikroservisima, izgrađen pomoću tehnologija FastAPI, Docker i MongoDB.
+Podržava autentifikaciju korisnika, objave, komentare i sustav foruma.
 
 
 ## 🛠 Korištene tehnologije i servisi
